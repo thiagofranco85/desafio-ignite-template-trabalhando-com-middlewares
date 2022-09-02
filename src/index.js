@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 
-const { v4: uuidv4, validate } = require('uuid');
+const { v4: uuidv4, validate, v4 } = require('uuid');
 
 const app = express();
 app.use(express.json());
@@ -10,19 +10,61 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+  const user = users.find(x => x.username === username);
+  if (user != undefined) {
+    request.user = user
+    next();
+  } else {
+    response.status(404).json({ "error": "Usuário não encontrado" })
+  }
+
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  const { user } = request
+  const userhasLessThan10 = user.todos.length < 10
+  const userPro = user.pro
+  if (userhasLessThan10 || userPro) {
+    next();
+  } else {
+    response.status(403).json({ "error": "Usuário no Plano Grátis!" })
+  }
+
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+  const { id } = request.params;
+
+  const regexExp = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi;
+  const isUuid = regexExp.test(id); // true
+
+  if (!isUuid) {
+    response.status(400).json({ "error": "UUID inválido!" })
+  }
+
+  const user = users.find(x => x.username === username)
+  const todo = user.todos.find(x => x.id === id)
+
+  if (todo != undefined) {
+    request.user = user
+    request.todo = todo
+    next()
+  } else {
+    response.status(404).json({ "error": "Usuário inexistente!" })
+  }
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const { id } = request.params;
+
+  const user = users.find(x => x.id === id);
+
+  if (user != undefined) {
+    request.user = user
+    next()
+  }
 }
 
 app.post('/users', (request, response) => {
